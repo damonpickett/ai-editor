@@ -61,7 +61,8 @@ raw_response = agent_executor.invoke({"query": query})
 
 # Parse the raw response using the Pydantic output parser and print the structured response
 try:
-    structured_response = parser.parse(raw_response.get("output")[0]["text"])
+    output_text = raw_response.get("output", "")
+    structured_response = parser.parse(output_text)
     print(structured_response)
 except Exception as e:
     print("error parsing response:", e, "Raw Response - ", raw_response)
