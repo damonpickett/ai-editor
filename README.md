@@ -43,8 +43,6 @@
 
 - Fiction editor mode:
   - python main.py --file path/to/manuscript.txt
-- Research mode:
-  - python main.py --query "your research question"
 
 ## Notes and Limitations
 
