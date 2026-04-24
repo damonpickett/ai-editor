@@ -1,3 +1,4 @@
+# IMPORTS
 import json
 from typing import Any
 from datetime import datetime
@@ -10,7 +11,8 @@ from llm_editing_tools import (
 )
 from tools import read_manuscript, save_editor_output
 
-
+# CONFIGURATION
+# This section defines the mapping of issue types to their corresponding analysis functions, as well as the priority order for processing different types of issues. The analysis functions are defined in the llm editing tools and are responsible for generating structured suggestions based on the manuscript text. The priority order ensures that certain types of issues (like punctuation) are analyzed before others (like economy), which can be important for the overall editing workflow.
 _ANALYSIS_FUNCS = {
     "punctuation": analyze_punctuation,
     "grammar": analyze_grammar,
@@ -20,14 +22,16 @@ _ANALYSIS_FUNCS = {
 
 _PRIORITY = ["punctuation", "grammar", "economy", "spelling"]
 
-
+# HELPERS
+# This helper function attempts to parse a JSON string and returns an empty list if parsing fails, ensuring that the main workflow can continue without crashing due to malformed JSON.
 def _safe_json_loads(raw: str) -> Any:
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
         return []
 
-
+# MAIN WORKFLOW
+# The main function `run_fiction_editor` orchestrates the entire editing process. It reads the manuscript, runs each analysis in the defined priority order, collects suggestions, and saves the results to a file. Finally, it returns a summary of the editing results.
 def run_fiction_editor(filepath: str) -> dict:
     """
     Run the fiction editor flow for a single manuscript file.
