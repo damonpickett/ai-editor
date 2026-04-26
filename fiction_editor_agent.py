@@ -44,6 +44,7 @@ def run_fiction_editor(filepath: str) -> dict:
 
     grouped_suggestions: dict[str, list[dict]] = {}
 
+    # this for loop processes each issue type in the defined priority order, calling the corresponding analysis function for each type and storing the parsed suggestions in a dictionary. The results are then saved to a file along with metadata about the source manuscript and a summary of the issues found.
     for issue_type in _PRIORITY:
         analyzer = _ANALYSIS_FUNCS[issue_type]
         raw = analyzer(content)
@@ -52,6 +53,7 @@ def run_fiction_editor(filepath: str) -> dict:
             parsed = []
         grouped_suggestions[issue_type] = parsed
 
+    # save_editor_output is called to save the suggestions and metadata to a file. The data is structured as a JSON object containing metadata about the source file and the grouped suggestions for each issue type. The result of the save operation is stored in `save_result`, which can be used for logging or debugging purposes.
     save_result = save_editor_output(
         data=json.dumps(
             {
