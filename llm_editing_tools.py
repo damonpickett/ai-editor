@@ -13,7 +13,7 @@ Suggestion shape:
         "severity": "high" | "medium" | "low",
     }
 """
-
+# IMPORTS
 import json
 from langchain_core.tools import Tool
 from langchain_openai import ChatOpenAI
@@ -24,6 +24,7 @@ from editing_analysis import (
     build_spelling_prompt,
 )
 
+# CONFIGURATION
 _llm = None
 
 
@@ -34,6 +35,7 @@ def _get_llm() -> ChatOpenAI:
     return _llm
 
 
+# HELPERS
 def _run_analysis(prompt_builder, text: str) -> str:
     """Call the LLM with a prompt and return validated JSON as a string."""
     prompt = prompt_builder(text)
@@ -78,6 +80,7 @@ def _run_analysis(prompt_builder, text: str) -> str:
     return json.dumps(suggestions, indent=2)
 
 
+# ANALYSIS FUNCTIONS
 def analyze_punctuation(text: str) -> str:
     return _run_analysis(build_punctuation_prompt, text)
 
@@ -94,6 +97,7 @@ def analyze_spelling(text: str) -> str:
     return _run_analysis(build_spelling_prompt, text)
 
 
+# TOOLS
 punctuation_tool = Tool(
     name="analyze_punctuation",
     func=analyze_punctuation,
