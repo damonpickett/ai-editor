@@ -1,3 +1,5 @@
+# IMPORTS
+# Standard library and third-party modules used throughout the file.
 import json
 from langchain_core.tools import Tool
 from pathlib import Path
@@ -6,7 +8,9 @@ from file_parser import parse_file
 
 
 # ---------------------------------------------------------------------------
-# Fiction editor tools
+# FICTION EDITOR TOOLS
+# LangChain Tool wrappers that expose manuscript reading and suggestion
+# saving functionality to the agent.
 # ---------------------------------------------------------------------------
 
 def read_manuscript(filepath: str) -> str:
@@ -24,6 +28,12 @@ file_reader_tool = Tool(
     ),
 )
 
+
+# ---------------------------------------------------------------------------
+# SAVE EDITOR OUTPUT
+# Formats and writes the agent's editing suggestions to a timestamped .txt
+# file, grouping issues by type and including manuscript metadata.
+# ---------------------------------------------------------------------------
 
 def save_editor_output(data: str, source_filename: str = "manuscript") -> str:
     """
