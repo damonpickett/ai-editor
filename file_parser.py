@@ -1,3 +1,6 @@
+# This file contains the `parse_file` function, which is responsible for reading and extracting text content from various manuscript file formats (.txt, .pdf, .doc, .docx). It uses specific libraries to handle each file type and returns a structured dictionary with the filename, file type, content, and word count. This function is called by the `read_manuscript` tool in `tools.py`, which is in turn used by the fiction editor agent to read the manuscript before analyzing it for editing suggestions.
+
+# IMPORTS
 from pathlib import Path
 
 
