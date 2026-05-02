@@ -1,3 +1,5 @@
+# This file defines the main workflow for a fiction editor agent that analyzes a manuscript for various issues such as punctuation, grammar, economy of language, and spelling. It uses analysis functions defined in the `llm_editing_tools` module to generate suggestions for each issue type. The manuscript is read using the `read_manuscript` tool from the `tools` module, which in turn relies on the `parse_file` function from `file_parser.py` to extract the content from the manuscript file. The results of the analysis are saved using the `save_editor_output` tool, which organizes the suggestions and metadata into a structured format. This file serves as the central orchestrator for the editing process, coordinating the reading, analyzing, and saving of the manuscript data.
+
 # IMPORTS
 import json
 from typing import Any
@@ -6,6 +8,7 @@ from datetime import datetime
 from llm_editing_tools import (
     analyze_punctuation,
     analyze_grammar,
+    analyze_narrative_consistency,
     analyze_economy,
     analyze_spelling,
 )
@@ -16,11 +19,12 @@ from tools import read_manuscript, save_editor_output
 _ANALYSIS_FUNCS = {
     "punctuation": analyze_punctuation,
     "grammar": analyze_grammar,
+    "narrative_consistency": analyze_narrative_consistency,
     "economy": analyze_economy,
     "spelling": analyze_spelling,
 }
 
-_PRIORITY = ["punctuation", "grammar", "economy", "spelling"]
+_PRIORITY = ["punctuation", "grammar", "narrative_consistency", "economy", "spelling"]
 
 # HELPERS
 # This helper function attempts to parse a JSON string and returns an empty list if parsing fails, ensuring that the main workflow can continue without crashing due to malformed JSON.

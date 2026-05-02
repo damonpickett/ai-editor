@@ -20,6 +20,7 @@ from langchain_openai import ChatOpenAI
 from editing_analysis import (
     build_punctuation_prompt,
     build_grammar_prompt,
+    build_narrative_consistency_prompt,
     build_economy_prompt,
     build_spelling_prompt,
 )
@@ -97,6 +98,10 @@ def analyze_spelling(text: str) -> str:
     return _run_analysis(build_spelling_prompt, text)
 
 
+def analyze_narrative_consistency(text: str) -> str:
+    return _run_analysis(build_narrative_consistency_prompt, text)
+
+
 # TOOLS
 punctuation_tool = Tool(
     name="analyze_punctuation",
@@ -134,6 +139,18 @@ spelling_tool = Tool(
     func=analyze_spelling,
     description=(
         "Analyze the manuscript text for spelling errors. "
+        "Input should be the full manuscript text as a string. "
+        "Returns a JSON array of suggestions with location, issue_type, explanation, and severity."
+    ),
+)
+
+narrative_consistency_tool = Tool(
+    name="analyze_narrative_consistency",
+    func=analyze_narrative_consistency,
+    description=(
+        "Analyze the manuscript text for internal narrative inconsistencies such as contradictory "
+        "character attributes, timeline conflicts, relationship contradictions, and location facts "
+        "that conflict between two passages within the same story. "
         "Input should be the full manuscript text as a string. "
         "Returns a JSON array of suggestions with location, issue_type, explanation, and severity."
     ),

@@ -60,7 +60,9 @@ def save_editor_output(data: str, source_filename: str = "manuscript") -> str:
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     stem = Path(source_filename).stem
     output_filename = f"{stem}_suggestions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-    output_path = Path(__file__).parent / output_filename
+    report_dir = Path(__file__).parent / "reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    output_path = report_dir / output_filename
 
     try:
         parsed = json.loads(data)
@@ -108,7 +110,7 @@ def save_editor_output(data: str, source_filename: str = "manuscript") -> str:
         "",
     ]
 
-    priority_order = ["punctuation", "grammar", "economy", "spelling"]
+    priority_order = ["punctuation", "grammar", "narrative_consistency", "economy", "spelling"]
     all_keys = priority_order + [k for k in grouped if k not in priority_order]
 
     for issue_type in all_keys:

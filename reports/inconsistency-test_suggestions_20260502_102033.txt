@@ -1,0 +1,36 @@
+Fiction Editor Suggestions
+Source file      : inconsistency-test.txt
+File type        : txt
+Word count       : 166
+Analysis time    : 2026-05-02 10:20:33
+Suggestions total: 9
+============================================================
+
+[PUNCTUATION]
+----------------------------------------
+Count: 0
+
+[GRAMMAR]
+----------------------------------------
+Count: 2
+  line 5  [medium]  The sentence 'She noticed the silver locket around her neck was missing' is in past tense, but it should be in past perfect tense to indicate that the action happened before another action in the past.
+  line 14  [medium]  The sentence 'The silver locket swung gently around her neck, exactly where it had been the entire night' is in past tense, but it should be in past perfect tense to indicate that the action happened before another action in the past.
+
+[NARRATIVE_CONSISTENCY]
+----------------------------------------
+Count: 1
+  line 6 and line 12  [high]  In line 6, Anna realizes her locket is missing and in line 7, she assumes she dropped it on the platform. However, in line 12, it's stated that the locket was around her neck the entire night.
+
+[ECONOMY]
+----------------------------------------
+Count: 6
+  line 1  [low]  The phrase 'Every evening at 9:15 p.m.' is redundant. 'Every evening' implies a regular occurrence, so the specific time is unnecessary.
+  line 3  [low]  The phrase 'before she passed away last winter' is redundant. 'Before she passed away' is enough to convey the idea.
+  line 5  [medium]  The phrase 'Anna stepped aboard and took her usual seat by the window' could be shortened to 'Anna took her usual window seat'.
+  line 6  [medium]  The phrase 'Panic rose in her chest' is unnecessary. The following sentence 'That locket was the only thing she had left of her mother' already conveys her distress.
+  line 8  [low]  The phrase 'Frantic, she jumped off the train just before the doors closed and ran back through the rain' could be shortened to 'Frantic, she jumped off the train and ran back through the rain'. The detail about the doors closing is unnecessary.
+  line 10  [medium]  The phrase 'The silver locket swung gently around her neck, exactly where it had been the entire night' is redundant. 'The silver locket swung gently around her neck' is enough to convey the idea.
+
+[SPELLING]
+----------------------------------------
+Count: 0

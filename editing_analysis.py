@@ -86,10 +86,40 @@ def build_spelling_prompt(text: str) -> str:
     )
 
 
-# Priority order matches user requirements: punctuation → grammar → economy → spelling
+def build_narrative_consistency_prompt(text: str) -> str:
+    return (
+        "You are a professional fiction editor specializing in narrative continuity. "
+        "Review the following manuscript for internal narrative inconsistencies only. "
+        "An inconsistency is an explicit factual contradiction between two specific passages "
+        "in the same story — for example, a character whose injury is described as a shoulder "
+        "wound in one scene and a leg wound in another, or a character stated to be dead in one "
+        "passage but alive and present in a later one. "
+        "For each inconsistency found, respond with a JSON array where each element has:\n"
+        '  "location": "line A and line B" (the two conflicting line numbers),\n'
+        '  "issue_type": "narrative_consistency",\n'
+        '  "explanation": a concise statement naming the contradiction and quoting or closely '
+        'paraphrasing both conflicting claims,\n'
+        '  "severity": "high", "medium", or "low".\n'
+        "Rules:\n"
+        "- Only flag contradictions supported by two explicitly conflicting passages in the text.\n"
+        "- Do NOT flag character development, personality growth, or mood changes over time.\n"
+        "- Do NOT flag unreliable or subjective narration unless the text itself "
+        "explicitly contradicts it elsewhere.\n"
+        "- Do NOT flag ambiguous or implied details — only clear, direct factual contradictions.\n"
+        "- Return an empty JSON array [] if no definite contradictions are found.\n"
+        "Focus on: character physical attributes (appearance, injuries, disabilities), character "
+        "names and titles, timeline and age references, relationship statuses, object states, "
+        "and location or geography facts.\n"
+        "Return only the JSON array, no other text.\n\n"
+        f"Manuscript:\n{text}"
+    )
+
+
+# Priority order: punctuation → grammar → narrative_consistency → economy → spelling
 ANALYSIS_PRIORITY = [
     ("punctuation", build_punctuation_prompt),
     ("grammar", build_grammar_prompt),
+    ("narrative_consistency", build_narrative_consistency_prompt),
     ("economy", build_economy_prompt),
     ("spelling", build_spelling_prompt),
 ]

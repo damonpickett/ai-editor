@@ -28,7 +28,6 @@ _PARSERS = {
     ".docx": _parse_docx,
 }
 
-# parse_file d
 def parse_file(filepath: str) -> dict:
     """
     Parse a .txt, .pdf, .doc, or .docx file and return its contents.

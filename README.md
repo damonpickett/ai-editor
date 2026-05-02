@@ -3,14 +3,14 @@
 ## Goal
 
 - Read one manuscript file (.txt, .pdf, .doc, .docx)
-- Analyze punctuation, grammar, economy of language, and spelling
+- Analyze punctuation, grammar, narrative consistency, economy of language, and spelling
 - Output a structured suggestions .txt file with grouped findings and metadata
 
 ## Architecture
 
 - Pattern: single-agent orchestration with specialized analysis tools
 - LLM: GPT-4 for analysis calls
-- Priority order: punctuation -> grammar -> economy -> spelling
+- Priority order: punctuation -> grammar -> narrative_consistency -> economy -> spelling
 - Execution mode: single file per run
 
 ## Implemented Modules
@@ -38,6 +38,7 @@
   - analysis timestamp
   - total suggestion count
   - grouped suggestions with per-category counts
+  - narrative_consistency section listing contradictions with paired evidence locations
 
 ## CLI Usage
 
