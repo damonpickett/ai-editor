@@ -381,7 +381,6 @@ def _run_narrative_fact_pass(text: str) -> list[dict]:
             facts.extend(_parse_narrative_facts(raw))
     except Exception:
         raise
-    print(f"Facts: {facts}")
     return facts
 
 

@@ -1,6 +1,7 @@
 # IMPORTS
 # Standard library and third-party modules used throughout the file.
 import json
+import re
 from langchain_core.tools import Tool
 from pathlib import Path
 from datetime import datetime
@@ -23,10 +24,69 @@ file_reader_tool = Tool(
     func=read_manuscript,
     description=(
         "Read a manuscript file (.txt, .pdf, .doc, or .docx) from the given file path. "
-        "Returns a JSON object with keys: filename, file_type, content, word_count. "
+        "Returns a JSON object with keys: filename, file_type, content, word_count, "
+        "line_to_page, and line_to_paragraph. "
         "Input should be the absolute or relative path to the file."
     ),
 )
+
+
+def _extract_line_numbers(location: object) -> list[int]:
+    return [int(match) for match in re.findall(r"\d+", str(location))]
+
+
+def _lookup_line_map(mapping: object, line_number: int) -> int | None:
+    if not isinstance(mapping, dict):
+        return None
+
+    value = mapping.get(line_number)
+    if value is None:
+        value = mapping.get(str(line_number))
+
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _format_location_reference(
+    line_number: int,
+    file_type: str,
+    line_to_page: object,
+    line_to_paragraph: object,
+) -> str:
+    paragraph = _lookup_line_map(line_to_paragraph, line_number)
+
+    if file_type.lower() == "pdf":
+        page = _lookup_line_map(line_to_page, line_number)
+        page_part = f"page {page}" if page is not None else "page unknown"
+        paragraph_part = (
+            f"paragraph {paragraph}" if paragraph is not None else "paragraph unknown"
+        )
+        return f"{page_part}, {paragraph_part}"
+
+    if paragraph is not None:
+        return f"paragraph {paragraph}"
+    return "paragraph unknown"
+
+
+def _display_location(location: object, metadata: dict) -> str:
+    line_numbers = _extract_line_numbers(location)
+    if not line_numbers:
+        return str(location)
+
+    file_type = str(metadata.get("file_type", "")).lower()
+    line_to_page = metadata.get("line_to_page", {})
+    line_to_paragraph = metadata.get("line_to_paragraph", {})
+
+    if not line_to_paragraph and file_type != "pdf":
+        return str(location)
+
+    references = [
+        _format_location_reference(line_number, file_type, line_to_page, line_to_paragraph)
+        for line_number in line_numbers
+    ]
+    return " and ".join(references)
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +106,8 @@ def save_editor_output(data: str, source_filename: str = "manuscript") -> str:
             "file_type": str,
             "word_count": int,
             "analysis_timestamp": str,
+            "line_to_page": dict,
+            "line_to_paragraph": dict,
         },
         "suggestions": {
             "punctuation": [...],
@@ -121,7 +183,7 @@ def save_editor_output(data: str, source_filename: str = "manuscript") -> str:
         lines.append("-" * 40)
         lines.append(f"Count: {counts_by_type.get(issue_type, 0)}")
         for s in suggestions:
-            location = s.get("location", "unknown")
+            location = _display_location(s.get("location", "unknown"), metadata)
             explanation = s.get("explanation", "")
             severity = s.get("severity", "")
             lines.append(f"  {location}  [{severity}]  {explanation}")

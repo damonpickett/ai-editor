@@ -66,6 +66,8 @@ def run_fiction_editor(filepath: str) -> dict:
                     "file_type": manuscript.get("file_type", "unknown"),
                     "word_count": manuscript.get("word_count", 0),
                     "analysis_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "line_to_page": manuscript.get("line_to_page", {}),
+                    "line_to_paragraph": manuscript.get("line_to_paragraph", {}),
                 },
                 "suggestions": grouped_suggestions,
             },
