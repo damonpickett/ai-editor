@@ -24,7 +24,6 @@ from langchain_openai import ChatOpenAI
 from editing_analysis import (
     build_economy_prompt,
     build_grammar_prompt,
-    build_narrative_consistency_prompt,
     build_punctuation_prompt,
     build_spelling_prompt,
 )
@@ -34,6 +33,9 @@ _NARRATIVE_MODEL = "gpt-5.4-mini"
 _NARRATIVE_MAX_TOKENS = 32000
 _CHUNK_LINE_COUNT = 120
 _CHUNK_OVERLAP_LINES = 20
+_NARRATIVE_FACT_CHUNK_LINE_COUNT = 240
+_NARRATIVE_FACT_CHUNK_OVERLAP_LINES = 40
+_NARRATIVE_FACT_MAX_TOKENS = 2500
 
 _llm_cache: dict[tuple[str, int | None], ChatOpenAI] = {}
 
@@ -136,11 +138,45 @@ def _parse_suggestions(raw: str) -> list[dict]:
     return suggestions
 
 
-def _number_lines(text: str) -> str:
-    lines = text.splitlines()
-    if not lines:
-        return ""
-    return "\n".join(f"{index}: {line}" for index, line in enumerate(lines, start=1))
+def _parse_narrative_facts(raw: str) -> list[dict]:
+    cleaned = _strip_code_fences(raw)
+    try:
+        parsed = json.loads(cleaned)
+    except json.JSONDecodeError:
+        return []
+
+    if not isinstance(parsed, list):
+        return []
+
+    facts: list[dict] = []
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+
+        entity = str(item.get("entity", "")).strip()
+        attribute = str(item.get("attribute", "")).strip()
+        value = str(item.get("value", "")).strip()
+        location = str(item.get("location", "")).strip()
+        evidence = str(item.get("evidence", "")).strip()
+
+        if not entity or not attribute or not value or not location:
+            continue
+
+        facts.append(
+            {
+                "entity": entity,
+                "attribute": attribute,
+                "value": value,
+                "location": location,
+                "evidence": evidence,
+            }
+        )
+
+    return facts
+
+
+def _line_numbers_from_location(location: str) -> list[int]:
+    return [int(match) for match in re.findall(r"\d+", str(location))]
 
 
 def _iter_line_numbered_chunks(
@@ -202,6 +238,98 @@ def _dedupe_suggestions(suggestions: list[dict]) -> list[dict]:
     return deduped
 
 
+def _build_narrative_fact_extraction_prompt(chunk_text: str) -> str:
+    return (
+        "Extract explicit continuity facts from this line-numbered fiction chunk. "
+        "Return only a JSON array where each item has keys: entity, attribute, value, "
+        "location, evidence.\n"
+        "Rules:\n"
+        "- Include only explicit factual claims.\n"
+        "- Ignore tone, mood, and subjective opinion.\n"
+        "- Keep location in line-number form from this chunk.\n"
+        "- If no facts are present, return [].\n\n"
+        f"Chunk:\n{chunk_text}"
+    )
+
+
+def _compress_facts_by_entity(facts: list[dict]) -> dict[str, list[dict]]:
+    grouped: dict[str, dict[tuple[str, str], dict]] = {}
+
+    for fact in facts:
+        entity = str(fact.get("entity", "")).strip()
+        attribute = str(fact.get("attribute", "")).strip()
+        value = str(fact.get("value", "")).strip()
+        if not entity or not attribute or not value:
+            continue
+
+        entity_bucket = grouped.setdefault(entity, {})
+        key = (attribute.lower(), value.lower())
+        entry = entity_bucket.get(key)
+        if entry is None:
+            entry = {
+                "attribute": attribute,
+                "value": value,
+                "locations": set(),
+                "evidence": [],
+            }
+            entity_bucket[key] = entry
+
+        for line_number in _line_numbers_from_location(str(fact.get("location", ""))):
+            entry["locations"].add(line_number)
+
+        evidence = str(fact.get("evidence", "")).strip()
+        if evidence and evidence not in entry["evidence"] and len(entry["evidence"]) < 3:
+            entry["evidence"].append(evidence)
+
+    compressed: dict[str, list[dict]] = {}
+    for entity, fact_map in grouped.items():
+        compact_facts: list[dict] = []
+        for entry in fact_map.values():
+            locations = sorted(entry["locations"])
+            if not locations:
+                continue
+            compact_facts.append(
+                {
+                    "attribute": entry["attribute"],
+                    "value": entry["value"],
+                    "locations": [f"line {line}" for line in locations[:8]],
+                    "evidence": entry["evidence"],
+                }
+            )
+        if compact_facts:
+            compressed[entity] = compact_facts
+
+    return compressed
+
+
+def _build_narrative_synthesis_prompt(entity: str, compressed_facts: list[dict]) -> str:
+    return (
+        "You are a fiction continuity editor. Analyze this entity's fact set for explicit or "
+        "directly implied contradictions. A directly implied contradiction is one where two facts "
+        "cannot both be true at the same time, even if they don't use opposite words — for "
+        "example, if one fact states an object was secured inside a coat and another states it "
+        "was worn around a character's neck all night, those facts are logically incompatible. "
+        "Return only a JSON array with objects containing keys: "
+        "location, issue_type, explanation, severity.\n"
+        "Rules:\n"
+        "- Use issue_type exactly 'narrative_consistency'.\n"
+        "- Include both conflicting lines in location, e.g. 'line 12 and line 240'.\n"
+        "- Do not flag character growth or changing emotions.\n"
+        "- Return [] when no logical contradiction exists.\n\n"
+        f"Entity: {entity}\n"
+        f"Facts: {json.dumps(compressed_facts, ensure_ascii=False)}"
+    )
+
+
+def _invoke_raw_prompt(
+    prompt: str,
+    model: str,
+    max_tokens: int | None = None,
+) -> str:
+    response = _get_llm(model=model, max_tokens=max_tokens).invoke(prompt)
+    return _message_content_to_text(response.content)
+
+
 def _invoke_prompt(
     prompt_builder: Callable[[str], str],
     text: str,
@@ -209,31 +337,8 @@ def _invoke_prompt(
     max_tokens: int | None = None,
 ) -> list[dict]:
     prompt = prompt_builder(text)
-    response = _get_llm(model=model, max_tokens=max_tokens).invoke(prompt)
-    raw = _message_content_to_text(response.content)
+    raw = _invoke_raw_prompt(prompt, model=model, max_tokens=max_tokens)
     return _parse_suggestions(raw)
-
-
-def _run_analysis(
-    prompt_builder: Callable[[str], str],
-    text: str,
-    model: str,
-    max_tokens: int | None = None,
-) -> str:
-    if not text.strip():
-        return _json_result([])
-
-    try:
-        suggestions = _invoke_prompt(
-            prompt_builder=prompt_builder,
-            text=text,
-            model=model,
-            max_tokens=max_tokens,
-        )
-    except Exception as error:
-        return _json_result(_runtime_error_suggestions(error))
-
-    return _json_result(_dedupe_suggestions(suggestions))
 
 
 def _run_chunked_analysis(
@@ -259,6 +364,45 @@ def _run_chunked_analysis(
     return _json_result(_dedupe_suggestions(all_suggestions))
 
 
+def _run_narrative_fact_pass(text: str) -> list[dict]:
+    facts: list[dict] = []
+    try:
+        for chunk_text in _iter_line_numbered_chunks(
+            text,
+            chunk_line_count=_NARRATIVE_FACT_CHUNK_LINE_COUNT,
+            overlap_lines=_NARRATIVE_FACT_CHUNK_OVERLAP_LINES,
+        ):
+            prompt = _build_narrative_fact_extraction_prompt(chunk_text)
+            raw = _invoke_raw_prompt(
+                prompt,
+                model=_NARRATIVE_MODEL,
+                max_tokens=_NARRATIVE_FACT_MAX_TOKENS,
+            )
+            facts.extend(_parse_narrative_facts(raw))
+    except Exception:
+        raise
+    print(f"Facts: {facts}")
+    return facts
+
+
+def _run_narrative_synthesis_pass(compressed: dict[str, list[dict]]) -> list[dict]:
+    suggestions: list[dict] = []
+    for entity, facts in compressed.items():
+        prompt = _build_narrative_synthesis_prompt(entity, facts)
+        raw = _invoke_raw_prompt(
+            prompt,
+            model=_NARRATIVE_MODEL,
+            max_tokens=_NARRATIVE_MAX_TOKENS,
+        )
+        parsed = _parse_suggestions(raw)
+        suggestions.extend(
+            item
+            for item in parsed
+            if str(item.get("issue_type", "")).strip().lower() == "narrative_consistency"
+        )
+    return suggestions
+
+
 def analyze_punctuation(text: str) -> str:
     return _run_chunked_analysis(build_punctuation_prompt, text)
 
@@ -276,13 +420,23 @@ def analyze_spelling(text: str) -> str:
 
 
 def analyze_narrative_consistency(text: str) -> str:
-    numbered_text = _number_lines(text)
-    return _run_analysis(
-        build_narrative_consistency_prompt,
-        numbered_text,
-        model=_NARRATIVE_MODEL,
-        max_tokens=_NARRATIVE_MAX_TOKENS,
-    )
+    if not text.strip():
+        return _json_result([])
+
+    try:
+        facts = _run_narrative_fact_pass(text)
+        if not facts:
+            return _json_result([])
+
+        compressed = _compress_facts_by_entity(facts)
+        if not compressed:
+            return _json_result([])
+
+        suggestions = _run_narrative_synthesis_pass(compressed)
+    except Exception as error:
+        return _json_result(_runtime_error_suggestions(error))
+
+    return _json_result(_dedupe_suggestions(suggestions))
 
 
 punctuation_tool = Tool(
