@@ -17,7 +17,7 @@ def main():
     arg_parser.add_argument(
         "--file",
         dest="file_path",
-        help="Path to a manuscript file (.txt, .pdf, .doc, .docx) for editor mode.",
+        help="Path to a manuscript file (.doc or .docx) for editor mode.",
     )
     args = arg_parser.parse_args()
 

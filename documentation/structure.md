@@ -31,6 +31,6 @@
 
 #### 6. file_parser.py
 
-**Purpose:** Parses supported manuscript file types (.txt, .pdf, .doc, .docx), normalizes extracted text, validates file support/errors, and returns a consistent metadata payload (filename, file_type, content, word_count).
+**Purpose:** Parses supported manuscript file types (.doc, .docx), normalizes extracted text, validates file support/errors, and returns a consistent metadata payload (filename, file_type, content, word_count).
 
 **Imports:** None from this codebase (this module is a source parser utility used by tools.py).

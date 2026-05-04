@@ -23,7 +23,7 @@ file_reader_tool = Tool(
     name="read_manuscript",
     func=read_manuscript,
     description=(
-        "Read a manuscript file (.txt, .pdf, .doc, or .docx) from the given file path. "
+        "Read a manuscript file (.doc or .docx) from the given file path. "
         "Returns a JSON object with keys: filename, file_type, content, word_count, "
         "line_to_page, and line_to_paragraph. "
         "Input should be the absolute or relative path to the file."
@@ -51,19 +51,9 @@ def _lookup_line_map(mapping: object, line_number: int) -> int | None:
 
 def _format_location_reference(
     line_number: int,
-    file_type: str,
-    line_to_page: object,
     line_to_paragraph: object,
 ) -> str:
     paragraph = _lookup_line_map(line_to_paragraph, line_number)
-
-    if file_type.lower() == "pdf":
-        page = _lookup_line_map(line_to_page, line_number)
-        page_part = f"page {page}" if page is not None else "page unknown"
-        paragraph_part = (
-            f"paragraph {paragraph}" if paragraph is not None else "paragraph unknown"
-        )
-        return f"{page_part}, {paragraph_part}"
 
     if paragraph is not None:
         return f"paragraph {paragraph}"
@@ -75,15 +65,13 @@ def _display_location(location: object, metadata: dict) -> str:
     if not line_numbers:
         return str(location)
 
-    file_type = str(metadata.get("file_type", "")).lower()
-    line_to_page = metadata.get("line_to_page", {})
     line_to_paragraph = metadata.get("line_to_paragraph", {})
 
-    if not line_to_paragraph and file_type != "pdf":
+    if not line_to_paragraph:
         return str(location)
 
     references = [
-        _format_location_reference(line_number, file_type, line_to_page, line_to_paragraph)
+        _format_location_reference(line_number, line_to_paragraph)
         for line_number in line_numbers
     ]
     return " and ".join(references)

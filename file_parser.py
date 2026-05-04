@@ -1,4 +1,4 @@
-# This file contains the `parse_file` function, which is responsible for reading and extracting text content from various manuscript file formats (.txt, .pdf, .doc, .docx). It uses specific libraries to handle each file type and returns a structured dictionary with the filename, file type, content, and word count. This function is called by the `read_manuscript` tool in `tools.py`, which is in turn used by the fiction editor agent to read the manuscript before analyzing it for editing suggestions.
+# This file contains the `parse_file` function, which is responsible for reading and extracting text content from manuscript file formats (.doc, .docx). It returns a structured dictionary with the filename, file type, content, and word count. This function is called by the `read_manuscript` tool in `tools.py`, which is in turn used by the fiction editor agent to read the manuscript before analyzing it for editing suggestions.
 
 # IMPORTS
 from pathlib import Path
@@ -28,30 +28,6 @@ def _build_line_to_paragraph(content: str) -> dict[int, int]:
     return line_to_paragraph
 
 
-def _parse_txt(filepath: Path) -> str:
-    with open(filepath, "r", encoding="utf-8") as f:
-        return f.read()
-
-
-def _parse_pdf(filepath: Path) -> tuple[str, dict[int, int]]:
-    from pypdf import PdfReader
-
-    reader = PdfReader(str(filepath))
-    lines: list[str] = []
-    line_to_page: dict[int, int] = {}
-    line_number = 1
-
-    for page_number, page in enumerate(reader.pages, start=1):
-        page_text = page.extract_text() or ""
-        page_lines = page_text.splitlines()
-        for line in page_lines:
-            lines.append(line)
-            line_to_page[line_number] = page_number
-            line_number += 1
-
-    return "\n".join(lines), line_to_page
-
-
 def _parse_docx(filepath: Path) -> str:
     from docx import Document
     doc = Document(str(filepath))
@@ -59,15 +35,13 @@ def _parse_docx(filepath: Path) -> str:
 
 
 _PARSERS = {
-    ".txt": _parse_txt,
-    ".pdf": _parse_pdf,
     ".doc": _parse_docx,
     ".docx": _parse_docx,
 }
 
 def parse_file(filepath: str) -> dict:
     """
-    Parse a .txt, .pdf, .doc, or .docx file and return its contents.
+    Parse a .doc or .docx file and return its contents.
 
     Returns:
         {
@@ -100,10 +74,7 @@ def parse_file(filepath: str) -> dict:
 
     try:
         line_to_page: dict[int, int] = {}
-        if suffix == ".pdf":
-            content, line_to_page = _parse_pdf(path)
-        else:
-            content = parser(path)
+        content = parser(path)
     except Exception as e:
         raise RuntimeError(f"Failed to parse '{filepath}': {e}") from e
 

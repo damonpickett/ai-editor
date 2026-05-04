@@ -2,7 +2,7 @@
 
 ## Goal
 
-- Read one manuscript file (.txt, .pdf, .doc, .docx)
+- Read one manuscript file (.doc, .docx)
 - Analyze punctuation, grammar, narrative consistency, economy of language, and spelling
 - Output a structured suggestions .txt file with grouped findings and metadata
 
@@ -17,7 +17,7 @@
 
 - main.py: CLI entrypoint and mode selection
 - fiction_editor_agent.py: editor workflow orchestration
-- file_parser.py: parser for txt/pdf/doc/docx with metadata extraction
+- file_parser.py: parser for doc/docx with metadata extraction
 - editing_analysis.py: prompt builders and issue-type priority map
 - llm_editing_tools.py: LLM-backed analysis functions by issue type
 - tools.py: manuscript reader and output writer
@@ -43,7 +43,7 @@
 ## CLI Usage
 
 - Fiction editor mode:
-  - python main.py --file path/to/manuscript.txt
+  - python main.py --file path/to/manuscript.doc
 
 ## Notes and Limitations
 
